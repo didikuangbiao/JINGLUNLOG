@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JINGLUN LOG | 像素日记存档</title>
+  <meta name="description" content="一个像素风私人日记存档网站，用来记录心情、想法和生活片段。公开版本隐藏手机号、邮箱等隐私联系方式。">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="boot-screen" aria-hidden="true">
+    <div class="boot-box">
+      <span class="boot-line">正在读取日记存档...</span>
+      <span class="boot-bar"><span></span></span>
+    </div>
+  </div>
+
+  <canvas id="pixel-field" aria-hidden="true"></canvas>
+  <div class="crt-overlay" aria-hidden="true"></div>
+  <div class="noise-overlay" aria-hidden="true"></div>
+
+  <section class="archive-gate" id="archive-gate" aria-hidden="true">
+    <div class="archive-gate__panel pixel-panel" role="dialog" aria-modal="true" aria-labelledby="archive-gate-title">
+      <div class="archive-gate__topbar">
+        <span></span>
+        <span></span>
+        <span></span>
+        <strong>PRIVATE_ACCESS.EXE</strong>
+      </div>
+
+      <div class="archive-login-panel" id="archive-login-panel">
+        <p class="eyebrow">ACCESS GATE</p>
+        <h2 id="archive-gate-title">输入访问密钥</h2>
+        <p class="archive-gate__copy">读取私人像素日记存档前，需要先解锁本地访问入口。</p>
+        <form class="archive-gate__form" id="archive-login-form">
+          <label for="archive-password">访问密钥</label>
+          <input id="archive-password" type="password" placeholder="ACCESS KEY" autocomplete="current-password">
+          <button class="pixel-button primary" type="submit">解锁存档</button>
+        </form>
+        <button class="archive-forgot" id="archive-forgot" type="button">忘记密钥？</button>
+        <p class="archive-gate__message" id="archive-gate-message" role="status"></p>
+        <p class="archive-gate__note">本功能用于私人站点的基础访问保护，不等同于真正加密。</p>
+      </div>
+
+      <div class="archive-recovery-panel" id="archive-recovery-panel" hidden>
+        <p class="eyebrow">RECOVERY MODE</p>
+        <h2>RECOVERY MODE</h2>
+        <p class="archive-gate__copy">输入恢复密钥以重设访问密码。</p>
+        <form class="archive-gate__form" id="archive-recovery-form">
+          <label for="archive-recovery-key">恢复密钥</label>
+          <input id="archive-recovery-key" type="password" placeholder="RECOVERY KEY" autocomplete="off">
+          <button class="pixel-button primary" type="submit">验证恢复密钥</button>
+        </form>
+        <form class="archive-gate__form archive-reset-form" id="archive-reset-form" hidden>
+          <label for="archive-new-password">新访问密钥</label>
+          <input id="archive-new-password" type="password" placeholder="NEW ACCESS KEY" autocomplete="new-password">
+          <label for="archive-confirm-password">确认访问密钥</label>
+          <input id="archive-confirm-password" type="password" placeholder="CONFIRM ACCESS KEY" autocomplete="new-password">
+          <button class="pixel-button primary" type="submit">保存新密钥</button>
+        </form>
+        <button class="pixel-button ghost archive-back-login" id="archive-back-login" type="button">返回登录</button>
+        <p class="archive-gate__message" id="archive-recovery-message" role="status"></p>
+        <p class="archive-gate__note">默认密码为 20010904；重设后将使用此浏览器本地保存的新密钥。</p>
+      </div>
+    </div>
+  </section>
+
+  <header class="site-header" id="top">
+    <nav class="nav-shell" aria-label="主导航">
+      <a class="logo" href="#home" aria-label="返回首页">
+        JINGLUN<span>LOG</span>
+      </a>
+      <button class="nav-toggle" type="button" aria-label="打开导航菜单" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <div class="nav-links">
+        <a href="#home">首页</a>
+        <a href="#about">特点</a>
+        <a href="#diary">日记</a>
+        <a href="#contact">联系</a>
+        <button class="archive-lock-button" id="archive-lock" type="button">锁定存档</button>
+      </div>
+    </nav>
+  </header>
+
+  <section class="today-status-hud" id="today-status-hud" aria-label="TODAY STATUS 今日状态">
+    <div class="today-status-hud__inner">
+      <div class="today-status-hud__title">
+        <span></span>
+        <strong>TODAY STATUS</strong>
+      </div>
+      <dl class="today-status-grid">
+        <div>
+          <dt>今日记录</dt>
+          <dd id="hud-today-written">读取中</dd>
+        </div>
+        <div>
+          <dt>最近心情</dt>
+          <dd id="hud-recent-mood">读取中</dd>
+        </div>
+        <div>
+          <dt>存档总数</dt>
+          <dd id="hud-total-count">0</dd>
+        </div>
+        <div>
+          <dt>最近保存</dt>
+          <dd id="hud-last-save">读取中</dd>
+        </div>
+        <div>
+          <dt>情绪物种</dt>
+          <dd id="hud-current-species">读取中</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <main>
+    <section class="hero section" id="home">
+      <div class="hero-content">
+        <p class="eyebrow">PRIVATE PIXEL ARCHIVE 1.0</p>
+        <h1 class="hero-title"><span>像素日记</span><span>存档站</span></h1>
+        <p class="hero-copy">
+          这里不是工作展示页，而是一个用来保存日常片段、情绪、灵感和自我观察的私人像素空间。
+          每一篇日记都是一次存档，每一次回看都像重新读取某个夜晚的记忆卡带。
+        </p>
+        <div class="hero-actions">
+          <a class="pixel-button primary" href="#diary">写入日记</a>
+          <a class="pixel-button ghost" href="#about">查看角色档案</a>
+        </div>
+      </div>
+
+      <aside class="hero-console" aria-label="日记系统状态">
+        <div class="console-top">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <figure class="hero-avatar-card">
+          <img src="assets/avatar-pixel.png" alt="网站主视觉像素人物头像">
+          <figcaption>
+            <span>PLAYER AVATAR</span>
+            <strong>吴靖伦的像素形象</strong>
+          </figcaption>
+        </figure>
+      </aside>
+    </section>
+
+    <section class="about section" id="about">
+      <div class="section-heading">
+        <p class="eyebrow">PLAYER PROFILE</p>
+        <h2>个人特点</h2>
+      </div>
+
+      <div class="about-grid profile-layout">
+        <article class="pixel-panel profile-card pixel-world-card" tabindex="0" aria-label="进入吴靖伦的像素世界">
+          <div class="profile-upper">
+            <h3>吴靖伦 / 一个喜欢把生活做成存档的人</h3>
+            <p>
+              偏理性，也有点浪漫；喜欢把复杂的东西整理成清楚的界面，把零散想法保存成可以回看的记录。
+              对新工具和数字创作有好奇心，愿意自己动手搭建网站、尝试小程序，也习惯用 AI 协作把灵感落地。
+            </p>
+            <div class="profile-actions">
+              <button class="pixel-button primary pixel-world-trigger" type="button">进入我的像素世界</button>
+              <span class="world-status" id="pixel-world-status">像素世界：未探索</span>
+            </div>
+          </div>
+
+          <div class="profile-lower-grid">
+            <figure class="profile-sprite-frame">
+              <div class="profile-player-sprite" role="img" aria-label="吴靖伦的黑发黑衣像素小人角色">
+                <span class="sprite-shadow"></span>
+                <span class="sprite-head"></span>
+                <span class="sprite-hair-back"></span>
+                <span class="sprite-bangs"></span>
+                <span class="sprite-eye sprite-eye-left"></span>
+                <span class="sprite-eye sprite-eye-right"></span>
+                <span class="sprite-mole"></span>
+                <span class="sprite-shirt"></span>
+                <span class="sprite-arm sprite-arm-left"></span>
+                <span class="sprite-arm sprite-arm-right"></span>
+                <span class="sprite-leg sprite-leg-left"></span>
+                <span class="sprite-leg sprite-leg-right"></span>
+              </div>
+              <figcaption>PLAYER SPRITE / 像素角色</figcaption>
+            </figure>
+
+            <div class="emotion-codex" aria-label="情绪图鉴状态">
+              <strong>情绪图鉴</strong>
+              <div id="emotion-codex-status" class="emotion-codex-grid">正在读取情绪物种...</div>
+            </div>
+          </div>
+        </article>
+
+        <article class="pixel-panel stat-panel">
+          <h3>角色属性</h3>
+          <div class="stat-row">
+            <span>观察力</span>
+            <strong>92%</strong>
+          </div>
+          <div class="meter" style="--value: 92%; --tone: var(--cyan);"><span></span></div>
+
+          <div class="stat-row">
+            <span>记录欲</span>
+            <strong>88%</strong>
+          </div>
+          <div class="meter" style="--value: 88%; --tone: var(--pink);"><span></span></div>
+
+          <div class="stat-row">
+            <span>探索精神</span>
+            <strong>95%</strong>
+          </div>
+          <div class="meter" style="--value: 95%; --tone: var(--green);"><span></span></div>
+
+          <div class="stat-row">
+            <span>像素审美</span>
+            <strong>MAX</strong>
+          </div>
+          <div class="meter" style="--value: 100%; --tone: var(--yellow);"><span></span></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="diary section" id="diary">
+      <div class="section-heading">
+        <p class="eyebrow">SAVE YOUR DAY</p>
+        <h2>日记存档</h2>
+      </div>
+
+      <div class="diary-grid">
+        <article class="pixel-panel diary-editor">
+          <div class="terminal-header">
+            <span>NEW_SAVE_SLOT.EXE</span>
+            <div>
+              <i></i>
+              <i></i>
+              <i></i>
+            </div>
+          </div>
+          <form id="diary-form" class="diary-form">
+            <label>
+              <span>标题</span>
+              <input id="diary-title" type="text" placeholder="例如：今天的存档点" maxlength="40" required>
+            </label>
+            <label>
+              <span>心情</span>
+              <select id="diary-mood">
+                <option value="开心">开心</option>
+                <option value="烦躁">烦躁</option>
+                <option value="低落">低落</option>
+                <option value="兴奋">兴奋</option>
+                <option value="思考中">思考中</option>
+                <option value="平静">平静</option>
+                <option value="加载中">加载中</option>
+              </select>
+            </label>
+            <label>
+              <span>标签</span>
+              <input id="diary-tags" type="text" placeholder="例如：夜晚, 灵感, 复盘">
+            </label>
+            <label>
+              <span>内容</span>
+              <textarea id="diary-content" rows="8" placeholder="写下今天发生了什么、想到了什么、或者有什么想留给未来的自己。" required></textarea>
+            </label>
+            <div class="diary-actions">
+              <button class="pixel-button primary" type="submit">保存日记</button>
+              <button class="pixel-button ghost" id="diary-clear" type="button">清空输入</button>
+              <button class="pixel-button ghost" id="diary-export" type="button">导出存档</button>
+              <button class="pixel-button ghost" id="diary-import" type="button">读取旧存档 / IMPORT SAVE</button>
+              <input id="diary-import-file" class="visually-hidden" type="file" accept="application/json,.json">
+            </div>
+          </form>
+        </article>
+
+        <aside class="pixel-panel diary-vault">
+          <div class="terminal-header">
+            <span>ARCHIVE_LIST.DAT</span>
+            <div>
+              <i></i>
+              <i></i>
+              <i></i>
+            </div>
+          </div>
+          <div class="vault-tools">
+            <input id="diary-search" type="search" placeholder="搜索标题、心情或内容">
+            <span id="diary-count">0 个存档</span>
+          </div>
+          <div id="diary-list" class="diary-list" aria-live="polite"></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="archive-map section" id="archive-map">
+      <div class="section-heading">
+        <p class="eyebrow">ARCHIVE MAP</p>
+        <h2>存档星图</h2>
+        <p class="section-heading__copy">每一个发光的日期，都是一次被保存下来的生活片段。</p>
+      </div>
+
+      <article class="pixel-panel archive-map-panel">
+        <header class="archive-map__terminal">
+          <span class="archive-map__terminal-title">STARMAP_VIEW.EXE</span>
+          <div class="archive-map__terminal-leds" aria-hidden="true">
+            <i></i><i></i><i></i>
+          </div>
+        </header>
+
+        <div class="archive-map__layout">
+          <div class="archive-calendar">
+            <div class="archive-calendar-header">
+              <button class="archive-calendar-nav" id="archive-prev-month" type="button" aria-label="上一个月">◀ 上个月</button>
+              <h3 id="archive-calendar-title">-- / --</h3>
+              <button class="archive-calendar-nav" id="archive-next-month" type="button" aria-label="下一个月">下个月 ▶</button>
+            </div>
+            <div class="archive-calendar-weekdays" aria-hidden="true">
+              <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+            </div>
+            <div class="archive-calendar-grid" id="archive-calendar-grid" role="grid" aria-label="存档日历"></div>
+            <p class="archive-calendar-legend">
+              <span class="archive-calendar-legend__chip" style="--day-color: #5dff8f;"></span>有日记
+              <span class="archive-calendar-legend__chip archive-calendar-legend__chip--today"></span>今天
+              <span class="archive-calendar-legend__chip archive-calendar-legend__chip--selected"></span>已选中
+            </p>
+          </div>
+
+          <aside class="archive-day-detail" id="archive-day-detail" aria-live="polite">
+            <div class="archive-day-detail__placeholder">
+              <span class="archive-day-detail__led" aria-hidden="true"></span>
+              <p>点击左侧日期，查看当天存档。</p>
+              <p class="archive-day-detail__hint">发光的日期 = 写过日记；暗色日期 = 还没存档。</p>
+            </div>
+          </aside>
+        </div>
+      </article>
+    </section>
+
+    <section class="contact section" id="contact">
+      <div class="section-heading">
+        <p class="eyebrow">CONTACT GATE</p>
+        <h2>联系方式</h2>
+      </div>
+
+      <div class="terminal pixel-panel">
+        <div class="terminal-header">
+          <span>CONTACT_SAFE.EXE</span>
+          <div>
+            <i></i>
+            <i></i>
+            <i></i>
+          </div>
+        </div>
+        <div class="terminal-body">
+          <p><span class="prompt">&gt;</span> 公开邮箱：1779221574@qq.com</p>
+          <p><span class="prompt">&gt;</span> 生日存档：2001-09-04</p>
+          <p><span class="prompt">&gt;</span> 微信入口：点击按钮查看二维码</p>
+          <p><span class="prompt">&gt;</span> 隐私状态：手机号、住址等敏感信息不在公开页面展示</p>
+          <button class="pixel-button primary wechat-trigger" type="button">发送消息</button>
+          <p class="cursor-line"><span class="prompt">&gt;</span> 等待下一次存档<span class="cursor"></span></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="save-feedback" id="save-feedback" aria-live="polite" aria-hidden="true">
+    <div class="save-feedback__panel">
+      <strong>SAVE COMPLETE</strong>
+      <span>本篇日记已被对应情绪物种收录</span>
+      <em>经验值 +10</em>
+    </div>
+  </div>
+
+  <div class="import-modal" id="diary-import-modal" aria-hidden="true">
+    <div class="import-modal__backdrop" data-close-import></div>
+    <div class="import-modal__panel" role="dialog" aria-modal="true" aria-labelledby="importModalTitle">
+      <div class="import-modal__topbar">
+        <span></span>
+        <span></span>
+        <span></span>
+        <button class="import-modal__close" type="button" data-close-import aria-label="关闭导入面板">X</button>
+      </div>
+      <div class="import-modal__body">
+        <p class="eyebrow">IMPORT SAVE</p>
+        <h3 id="importModalTitle">读取旧存档</h3>
+        <p id="import-modal-summary">检测到 0 篇日记。</p>
+        <p class="import-modal__hint">合并导入会根据 id 去重；覆盖导入只替换日记存档，不会清除密码、二维码或小游戏数据。</p>
+        <div class="import-modal__actions">
+          <button class="pixel-button primary" id="import-merge" type="button">合并导入</button>
+          <button class="pixel-button ghost" id="import-overwrite" type="button">覆盖导入</button>
+          <button class="pixel-button ghost" type="button" data-close-import>取消</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wechat-modal" id="wechatModal" aria-hidden="true">
+    <div class="wechat-modal__backdrop" data-close-wechat></div>
+    <div class="wechat-modal__panel" role="dialog" aria-modal="true" aria-labelledby="wechatModalTitle">
+      <div class="wechat-modal__topbar">
+        <span></span>
+        <span></span>
+        <span></span>
+        <button class="wechat-modal__close" type="button" data-close-wechat aria-label="关闭微信二维码弹窗">X</button>
+      </div>
+      <div class="wechat-modal__body">
+        <p class="eyebrow">WECHAT GATE</p>
+        <h3 id="wechatModalTitle">添加微信</h3>
+        <p>扫描二维码，添加我为好友。</p>
+        <img src="assets/wechat-qr.jpg" alt="微信二维码" class="wechat-qr-img">
+        <p class="wechat-modal__hint">如果二维码失效，可以通过邮箱联系我。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="pixel-world-overlay" id="pixel-world-overlay" aria-hidden="true">
+    <div class="pixel-world-window" role="dialog" aria-modal="true" aria-labelledby="pixel-world-title">
+      <div class="pixel-world-topbar">
+        <div>
+          <span class="world-led"></span>
+          <span class="world-led"></span>
+          <span class="world-led"></span>
+        </div>
+        <h2 id="pixel-world-title">吴靖伦的像素世界</h2>
+        <button class="world-close" id="pixel-world-close" type="button" aria-label="关闭像素世界">X</button>
+      </div>
+
+      <div class="pixel-world-body">
+        <div class="game-screen">
+          <canvas id="pixel-world-canvas" width="640" height="400" aria-label="可操控的像素日记世界"></canvas>
+          <div class="game-scanlines" aria-hidden="true"></div>
+        </div>
+
+        <aside class="world-dialogue" aria-live="polite">
+          <span class="dialogue-speaker" id="world-system-title">SYSTEM</span>
+          <div class="world-system-scroll">
+            <p id="world-dialogue-text">情绪物种图鉴正在待机。靠近一种生物，按 E 读取它的存档。</p>
+            <div class="dialogue-nav" id="world-diary-nav" hidden>
+              <button type="button" id="world-prev-diary">上一篇相关</button>
+              <button type="button" id="world-next-diary">下一篇相关</button>
+            </div>
+            <button class="dialogue-action" id="world-dialogue-action" type="button" hidden>返回日记存档</button>
+          </div>
+        </aside>
+      </div>
+
+      <div class="world-mobile-controls" aria-label="移动端虚拟方向键">
+        <div class="dpad">
+          <button type="button" data-move="up" aria-label="向上">▲</button>
+          <button type="button" data-move="left" aria-label="向左">◀</button>
+          <button type="button" data-move="down" aria-label="向下">▼</button>
+          <button type="button" data-move="right" aria-label="向右">▶</button>
+        </div>
+        <button class="inspect-button" id="world-inspect" type="button">查看 / E</button>
+      </div>
+
+      <div class="world-help">
+        <span>方向键 / WASD 移动</span>
+        <span>靠近情绪物种，按 E 读取</span>
+        <span>ESC 返回日记站</span>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <p>© 2026 JINGLUN LOG. DIARY SAVED.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
