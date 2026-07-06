@@ -2459,6 +2459,7 @@ body.pixel-world-open {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
+  min-height: 100dvh;
 }
 
 .pixel-world-overlay::before,
@@ -2809,6 +2810,33 @@ body.pixel-world-open {
   font-weight: 900;
   box-shadow: 4px 4px 0 #000, inset 0 0 12px color-mix(in srgb, var(--world-primary), transparent 86%);
   touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Block long-press text selection on all pixel-world game controls (universal,
+   not just mobile, so desktop Safari/edge browsers also behave). */
+.pixel-world-window,
+.pixel-world-topbar,
+.world-dialogue,
+.world-mobile-controls,
+.dpad,
+.dpad button,
+.inspect-button,
+.dialogue-nav button,
+.dialogue-action,
+.world-close {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.dpad button,
+.inspect-button,
+.dialogue-nav button,
+.dialogue-action {
+  touch-action: manipulation;
 }
 
 .dpad button:active,
@@ -2924,41 +2952,103 @@ body.pixel-world-open {
 }
 
 @media (max-width: 760px) {
+  /* Use dynamic viewport height so iOS Safari / WeChat bottom address bar
+     does not cover controls. Fall back gracefully if dvh unsupported. */
   .pixel-world-overlay {
-    padding: 10px;
+    padding: 8px;
+    min-height: 100dvh;
   }
 
   .pixel-world-window {
-    height: calc(100vh - 20px);
-    max-height: calc(100vh - 20px);
+    width: calc(100vw - 16px);
+    height: calc(100dvh - 16px);
+    max-height: calc(100dvh - 16px);
+    /* Safe-area padding for iPhone home indicator etc. */
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
   }
 
+  .pixel-world-topbar {
+    min-height: 52px;
+    padding: 8px 12px;
+  }
+
+  /* Stack: canvas (top), dialogue (middle), mobile controls (bottom).
+     World-help remains after grid auto-rows. */
   .pixel-world-body {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(210px, 1fr) minmax(0, auto);
-    gap: 12px;
+    grid-template-rows: minmax(0, auto) minmax(0, 1fr);
+    gap: 10px;
+    padding: 10px;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .game-screen {
+    width: 100%;
+    max-height: 38dvh;
     min-height: 0;
+    aspect-ratio: auto;
   }
 
+  #pixel-world-canvas {
+    width: 100%;
+    height: auto;
+    max-height: 38dvh;
+    object-fit: contain;
+    image-rendering: pixelated;
+  }
+
+  /* SYSTEM text box must remain visible above the dpad. */
   .world-dialogue {
-    max-height: 260px;
-    min-height: 0;
-    padding: 12px;
+    min-height: 140px;
+    max-height: 220px;
+    padding: 10px 12px;
   }
 
   .world-system-scroll {
-    max-height: 232px;
+    max-height: 200px;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 6px;
   }
 
+  /* Mobile controls: horizontal layout — dpad left, inspect right. Compact. */
   .world-mobile-controls {
     display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+    align-items: stretch;
+    padding: 0 10px 6px;
+    flex-wrap: nowrap;
+  }
+
+  .dpad {
+    display: grid;
+    grid-template-columns: repeat(3, 52px);
+    grid-template-rows: repeat(3, 50px);
+    gap: 6px;
+    justify-content: center;
+  }
+
+  .dpad button {
+    width: 52px;
+    height: 50px;
+    font-size: 1.05rem;
+  }
+
+  .inspect-button {
+    width: 100%;
+    min-height: 56px;
+    height: auto;
+    margin: 0;
+    font-size: 0.98rem;
   }
 
   .world-help {
-    font-size: 0.74rem;
+    font-size: 0.7rem;
+    padding: 8px 12px 10px;
   }
 }
 
@@ -2975,12 +3065,29 @@ body.pixel-world-open {
     text-align: left;
   }
 
+  /* Stack dpad and inspect vertically on tiny screens. */
   .world-mobile-controls {
     grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 10px;
   }
 
   .dpad {
     margin: 0 auto;
+  }
+
+  .inspect-button {
+    max-width: 320px;
+  }
+
+  /* Further tighten SYSTEM box so it stays above the controls. */
+  .world-dialogue {
+    min-height: 120px;
+    max-height: 180px;
+  }
+
+  .world-system-scroll {
+    max-height: 160px;
   }
 }
 

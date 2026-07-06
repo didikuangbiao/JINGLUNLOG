@@ -2116,6 +2116,16 @@ dpadButtons.forEach((button) => {
   };
   const key = keyMap[move];
 
+  // touchstart preventDefault avoids the browser intercepting taps for
+  // scroll/zoom while keeping the pointerdown path intact.
+  button.addEventListener("touchstart", (event) => {
+    event.preventDefault();
+  }, { passive: false });
+
+  button.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+  });
+
   button.addEventListener("pointerdown", (event) => {
     event.preventDefault();
     worldKeys.add(key);
@@ -2130,6 +2140,13 @@ dpadButtons.forEach((button) => {
 });
 
 worldInspect?.addEventListener("click", interactWithWorldObject);
+
+// Block long-press context menu on the inspect button too.
+worldInspect?.addEventListener("contextmenu", (event) => event.preventDefault());
+worldInspect?.addEventListener("touchstart", (event) => {
+  // Allow click to fire; only stop default browser behaviour.
+  if (event.cancelable) event.preventDefault();
+}, { passive: false });
 
 worldPrevDiary?.addEventListener("click", () => {
   if (activeSpeciesId) {
