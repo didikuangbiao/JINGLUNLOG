@@ -223,9 +223,15 @@
     </section>
 
     <section class="diary section" id="diary">
-      <div class="section-heading">
-        <p class="eyebrow">SAVE YOUR DAY</p>
-        <h2>日记存档</h2>
+      <div class="section-heading section-heading--with-action">
+        <div class="section-heading__text">
+          <p class="eyebrow">SAVE YOUR DAY</p>
+          <h2>日记存档</h2>
+        </div>
+        <button class="pixel-button primary random-save-trigger" type="button" id="random-save-trigger">
+          <span class="random-save-trigger__label">读取过去的我</span>
+          <span class="random-save-trigger__hint">RANDOM SAVE</span>
+        </button>
       </div>
 
       <div class="diary-grid">
@@ -388,6 +394,30 @@
           <button class="pixel-button primary" id="import-merge" type="button">合并导入</button>
           <button class="pixel-button ghost" id="import-overwrite" type="button">覆盖导入</button>
           <button class="pixel-button ghost" type="button" data-close-import>取消</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="random-save-modal" id="random-save-modal" aria-hidden="true">
+    <div class="random-save-modal__backdrop" data-close-random></div>
+    <div class="random-save-modal__panel" role="dialog" aria-modal="true" aria-labelledby="randomSaveTitle">
+      <div class="random-save-modal__topbar">
+        <span></span>
+        <span></span>
+        <span></span>
+        <button class="random-save-modal__close" type="button" data-close-random aria-label="关闭随机存档弹窗">X</button>
+      </div>
+      <div class="random-save-modal__body">
+        <p class="eyebrow">PAST SAVE LOADED</p>
+        <h3 id="randomSaveTitle">读取旧存档</h3>
+        <p class="random-save-modal__subtitle">正在从过去的你那里读取一段记忆……</p>
+        <div class="random-save-modal__content" id="random-save-content" aria-live="polite"></div>
+        <p class="random-save-modal__footer">这是一段来自过去的存档。</p>
+        <div class="random-save-modal__actions">
+          <button class="pixel-button primary" id="random-save-reroll" type="button">再读一篇</button>
+          <button class="pixel-button ghost" id="random-save-view-day" type="button">查看这一天</button>
+          <button class="pixel-button ghost" type="button" data-close-random>关闭</button>
         </div>
       </div>
     </div>

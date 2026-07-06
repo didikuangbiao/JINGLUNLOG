@@ -9,6 +9,12 @@ const wechatTrigger = document.querySelector(".wechat-trigger");
 const wechatModal = document.querySelector("#wechatModal");
 const wechatModalClose = wechatModal?.querySelector(".wechat-modal__close");
 const wechatCloseTargets = [...document.querySelectorAll("[data-close-wechat]")];
+const randomSaveTrigger = document.querySelector("#random-save-trigger");
+const randomSaveModal = document.querySelector("#random-save-modal");
+const randomSaveContent = document.querySelector("#random-save-content");
+const randomSaveReroll = document.querySelector("#random-save-reroll");
+const randomSaveViewDay = document.querySelector("#random-save-view-day");
+const randomSaveCloseTargets = [...document.querySelectorAll("[data-close-random]")];
 const archiveGate = document.querySelector("#archive-gate");
 const archiveGatePanel = archiveGate?.querySelector(".archive-gate__panel");
 const archiveLoginPanel = document.querySelector("#archive-login-panel");
@@ -322,6 +328,11 @@ window.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && wechatModal?.classList.contains("is-open")) {
     event.preventDefault();
     closeWechatModal();
+  }
+
+  if (event.key === "Escape" && randomSaveModal?.classList.contains("is-open")) {
+    event.preventDefault();
+    closeRandomSaveModal();
   }
 });
 
@@ -1062,6 +1073,107 @@ diaryImportOverwrite?.addEventListener("click", () => {
 
 diaryImportCloseTargets.forEach((target) => {
   target.addEventListener("click", closeImportModal);
+});
+
+// ===== Random Save / 随机读取旧日记 =====
+function pickRandomDiaryEntry(entries, excludeId) {
+  if (!entries.length) return null;
+  if (entries.length === 1) return entries[0];
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const pick = entries[Math.floor(Math.random() * entries.length)];
+    if (!excludeId || pick.id !== excludeId) return pick;
+  }
+  return entries[Math.floor(Math.random() * entries.length)];
+}
+
+function renderRandomSaveEntry(entry) {
+  if (!entry || !randomSaveContent) return;
+  randomSaveContent.innerHTML = `
+    <article class="random-save-entry">
+      <header>
+        <h4>${escapeHTML(entry.title)}</h4>
+        <span class="random-save-entry__mood">${escapeHTML(entry.mood)}</span>
+      </header>
+      <div class="random-save-entry__meta">
+        <time datetime="${escapeHTML(entry.createdAt)}">${formatTime(entry.createdAt)}</time>
+        ${renderDiaryTags(entry.tags)}
+      </div>
+      <p class="random-save-entry__content">${escapeHTML(entry.content)}</p>
+    </article>`;
+}
+
+function renderRandomSaveEmpty() {
+  if (!randomSaveContent) return;
+  randomSaveContent.innerHTML = `
+    <div class="random-save-modal__empty">
+      <p>还没有旧存档可以读取。</p>
+      <p>先写下一篇吧。</p>
+    </div>`;
+}
+
+function openRandomSaveModal() {
+  if (!randomSaveModal) return;
+  const entries = getDiaryEntries();
+
+  if (!entries.length) {
+    renderRandomSaveEmpty();
+    if (randomSaveReroll) randomSaveReroll.hidden = true;
+    if (randomSaveViewDay) randomSaveViewDay.hidden = true;
+    randomSaveLastEntryId = null;
+  } else {
+    const pick = pickRandomDiaryEntry(entries, randomSaveLastEntryId);
+    randomSaveLastEntryId = pick?.id || null;
+    renderRandomSaveEntry(pick);
+    if (randomSaveReroll) randomSaveReroll.hidden = false;
+    if (randomSaveViewDay) randomSaveViewDay.hidden = entries.length === 0;
+  }
+
+  randomSaveLastFocus = document.activeElement;
+  randomSaveModal.classList.add("is-open");
+  randomSaveModal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+  if (randomSaveReroll && !randomSaveReroll.hidden) {
+    randomSaveReroll.focus();
+  } else {
+    randomSaveModal.querySelector(".random-save-modal__close")?.focus();
+  }
+}
+
+function closeRandomSaveModal() {
+  if (!randomSaveModal || !randomSaveModal.classList.contains("is-open")) return;
+  randomSaveModal.classList.remove("is-open");
+  randomSaveModal.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("modal-open");
+  if (randomSaveLastFocus instanceof HTMLElement) {
+    randomSaveLastFocus.focus();
+  }
+}
+
+randomSaveTrigger?.addEventListener("click", (event) => {
+  event.preventDefault();
+  openRandomSaveModal();
+});
+
+randomSaveCloseTargets.forEach((target) => {
+  target.addEventListener("click", closeRandomSaveModal);
+});
+
+randomSaveReroll?.addEventListener("click", openRandomSaveModal);
+
+randomSaveViewDay?.addEventListener("click", () => {
+  if (!randomSaveLastEntryId) return;
+  const entries = getDiaryEntries();
+  const entry = entries.find((item) => item.id === randomSaveLastEntryId);
+  if (!entry) return;
+  const dateKey = getArchiveEntryDateKey(entry);
+  if (!dateKey) return;
+  closeRandomSaveModal();
+  const [year, month] = dateKey.split("-");
+  archiveMapYear = parseInt(year, 10);
+  archiveMapMonth = parseInt(month, 10) - 1;
+  archiveMapSelectedKey = dateKey;
+  renderArchiveMap();
+  document.querySelector("#archive-map")?.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
 // Pixel world mini-space: a tiny controllable diary room rendered on canvas.
