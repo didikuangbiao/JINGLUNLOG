@@ -2955,100 +2955,122 @@ body.pixel-world-open {
   /* Use dynamic viewport height so iOS Safari / WeChat bottom address bar
      does not cover controls. Fall back gracefully if dvh unsupported. */
   .pixel-world-overlay {
-    padding: 8px;
+    padding: 6px;
     min-height: 100dvh;
   }
 
+  /* Tight 3-row shell: topbar / body / mobile-controls (help merges into body).
+     Body carries the world-help via grid-template-rows: auto auto auto. */
   .pixel-world-window {
-    width: calc(100vw - 16px);
-    height: calc(100dvh - 16px);
-    max-height: calc(100dvh - 16px);
-    /* Safe-area padding for iPhone home indicator etc. */
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
-    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    width: calc(100vw - 12px);
+    height: calc(100dvh - 12px);
+    max-height: calc(100dvh - 12px);
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    overflow: hidden;
   }
 
   .pixel-world-topbar {
-    min-height: 52px;
-    padding: 8px 12px;
+    min-height: 46px;
+    padding: 6px 10px;
   }
 
-  /* Stack: canvas (top), dialogue (middle), mobile controls (bottom).
-     World-help remains after grid auto-rows. */
+  /* Body stacks vertically: canvas (auto), SYSTEM (auto), controls (auto).
+     Overflow-y allows scroll when total exceeds available height. */
   .pixel-world-body {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(0, auto) minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
     gap: 10px;
     padding: 10px;
     overflow-y: auto;
     overflow-x: hidden;
+    max-height: calc(100dvh - 120px);
+    -webkit-overflow-scrolling: touch;
   }
 
   .game-screen {
     width: 100%;
-    max-height: 38dvh;
+    max-height: 34dvh;
     min-height: 0;
     aspect-ratio: auto;
+    order: 1;
   }
 
   #pixel-world-canvas {
     width: 100%;
     height: auto;
-    max-height: 38dvh;
+    max-height: 34dvh;
     object-fit: contain;
     image-rendering: pixelated;
   }
 
-  /* SYSTEM text box must remain visible above the dpad. */
+  /* SYSTEM text panel: fixed height on mobile, content scrolls inside
+     .world-system-scroll. */
   .world-dialogue {
-    min-height: 140px;
+    min-height: 150px;
     max-height: 220px;
     padding: 10px 12px;
+    overflow: hidden;
+    order: 2;
   }
 
   .world-system-scroll {
-    max-height: 200px;
+    max-height: 190px;
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     padding-right: 6px;
+    -webkit-overflow-scrolling: touch;
   }
 
-  /* Mobile controls: horizontal layout — dpad left, inspect right. Compact. */
+  /* Compact mobile controls: dpad 44x44, inspect button 48-56px. */
   .world-mobile-controls {
     display: grid;
-    grid-template-columns: auto 1fr;
+    grid-template-columns: auto minmax(120px, 1fr);
     gap: 12px;
-    align-items: stretch;
-    padding: 0 10px 6px;
+    align-items: center;
+    margin-top: 8px;
+    padding: 0 10px 4px;
     flex-wrap: nowrap;
+    order: 3;
   }
 
   .dpad {
     display: grid;
-    grid-template-columns: repeat(3, 52px);
-    grid-template-rows: repeat(3, 50px);
+    grid-template-columns: repeat(3, 44px);
+    grid-template-rows: repeat(3, 44px);
     gap: 6px;
     justify-content: center;
   }
 
   .dpad button {
-    width: 52px;
-    height: 50px;
-    font-size: 1.05rem;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    font-size: 1rem;
+    padding: 0;
   }
 
   .inspect-button {
     width: 100%;
-    min-height: 56px;
-    height: auto;
-    margin: 0;
-    font-size: 0.98rem;
+    min-height: 48px;
+    max-height: 56px;
+    padding: 10px 12px;
+    font-size: 1rem;
   }
 
+  /* Shorter help footer on mobile — only show essential hints. */
   .world-help {
-    font-size: 0.7rem;
-    padding: 8px 12px 10px;
+    font-size: 0.68rem;
+    padding: 6px 10px 8px;
+    gap: 6px;
+    order: 4;
+  }
+
+  /* Hide non-essential help items on mobile. */
+  .world-help .world-help--desktop {
+    display: none;
   }
 }
 

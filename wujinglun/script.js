@@ -1201,6 +1201,14 @@ const lastPixelSaveKey = "lastPixelSave";
 const pixelWorldLastElementKey = "pixelWorldLastElement";
 
 const tileSize = 32;
+
+// On mobile, restore-from-storage was locking the world into whatever
+// element the player last visited (commonly fire), which made it impossible
+// to discover the other five maps. Default to false so each open starts in
+// the neutral standby domain and the player has to walk over to a species to
+// switch the active theme. The last-visited element is still recorded so a
+// future desktop build (or explicit opt-in) can resume.
+const RESTORE_LAST_WORLD_THEME_ON_OPEN = false;
 const worldMap = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
   [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -1526,20 +1534,40 @@ function showSpeciesDiary(speciesId, index = 0) {
   }
 }
 
+function isPixelWorldMobileLayout() {
+  return typeof window !== "undefined" && window.matchMedia && window.matchMedia("(max-width: 760px)").matches;
+}
+
 function openPixelWorld() {
   if (!pixelWorldOverlay || !worldCtx) return;
   worldOpen = true;
   localStorage.setItem(pixelWorldVisitedKey, "true");
   updateWorldStatus();
-  applyWorldTheme(localStorage.getItem(pixelWorldLastElementKey) || "neutral", false);
+
+  // Decide whether to honor the previously visited element. By default we
+  // always start in neutral so the player can walk toward any species.
+  const storedElement = localStorage.getItem(pixelWorldLastElementKey);
+  const startElement = RESTORE_LAST_WORLD_THEME_ON_OPEN && worldThemes[storedElement] ? storedElement : "neutral";
+  applyWorldTheme(startElement, false);
+
   pixelWorldOverlay.classList.add("is-open");
   pixelWorldOverlay.setAttribute("aria-hidden", "false");
   document.body.classList.add("pixel-world-open");
   pixelWorldClose?.focus();
   getDiaryEntries();
   renderEmotionCodexStatus();
+
+  // Build the SYSTEM message; include "上次探索领域" hint when restoring
+  // would have shown something other than neutral, even though we opened in
+  // neutral.
   const theme = getCurrentWorldTheme();
-  setWorldDialogue(theme.message);
+  let intro = theme.message;
+  if (storedElement && worldThemes[storedElement] && storedElement !== "neutral" && !RESTORE_LAST_WORLD_THEME_ON_OPEN) {
+    const stored = worldThemes[storedElement];
+    intro = `上次探索领域：${stored.name}\n${theme.message}`;
+  }
+  setWorldDialogue(intro);
+  if (worldSystemScroll) worldSystemScroll.scrollTop = 0;
 
   if (!worldAnimation) {
     worldAnimation = requestAnimationFrame(tickPixelWorld);
@@ -1549,7 +1577,9 @@ function openPixelWorld() {
 function closePixelWorld() {
   if (!pixelWorldOverlay) return;
   worldOpen = false;
+  // Clear every input source so the player does not keep moving after close.
   worldKeys.clear();
+  lastNearestObject = null;
   pixelWorldOverlay.classList.remove("is-open");
   pixelWorldOverlay.setAttribute("aria-hidden", "true");
   document.body.classList.remove("pixel-world-open");
@@ -1558,6 +1588,23 @@ function closePixelWorld() {
     worldAnimation = null;
   }
   pixelWorldTrigger?.focus();
+}
+
+// Returns the nearest species within maxDistance, or null. Always picks
+// the truly nearest one so two adjacent species are disambiguated cleanly.
+function getNearestInteractableSpecies(maxDistance) {
+  const px = player.x + player.w / 2;
+  const py = player.y + player.h / 2;
+  let nearest = null;
+  let nearestDistance = Infinity;
+  worldObjects.forEach((object) => {
+    const distance = Math.hypot(object.cx - px, object.cy - py);
+    if (distance < nearestDistance) {
+      nearest = object;
+      nearestDistance = distance;
+    }
+  });
+  return nearestDistance <= maxDistance ? nearest : null;
 }
 
 function tileAtPixel(x, y) {
@@ -1658,9 +1705,18 @@ function nearestWorldObject() {
 function interactWithWorldObject() {
   if (!worldOpen) return;
   getDiaryEntries();
-  const object = nearestWorldObject();
+
+  // Desktop uses a tight 58px reach; mobile uses a generous 96px so on-screen
+  // dpad + coarse taps can still reach any of the 5 species without having
+  // to pixel-walk the avatar onto the tile.
+  const reach = isPixelWorldMobileLayout() ? 96 : 58;
+  const object = getNearestInteractableSpecies(reach);
+
   if (!object) {
-    setWorldDialogue("这里暂时只有风声和漂浮的像素。再靠近一点试试。");
+    setWorldDialogue(isPixelWorldMobileLayout()
+      ? "附近没有可以读取的情绪物种。\n靠近后再点查看。"
+      : "这里暂时只有风声和漂浮的像素。再靠近一点试试。");
+    if (worldSystemScroll) worldSystemScroll.scrollTop = 0;
     return;
   }
 
@@ -1668,6 +1724,7 @@ function interactWithWorldObject() {
   updateWorldStatus();
   const theme = applyWorldTheme(object.element, true);
   setWorldDialogue(`正在切换领域……\n${theme.message}`, false);
+  if (worldSystemScroll) worldSystemScroll.scrollTop = 0;
   clearTimeout(speciesRevealTimer);
   speciesRevealTimer = setTimeout(() => {
     showSpeciesDiary(object.id, 0);
@@ -2037,12 +2094,23 @@ function drawPixelWorld() {
 }
 
 function tickPixelWorld() {
+  if (!worldOpen) return;
   movePlayer();
-  const nearest = nearestWorldObject();
+
+  // Desktop uses tight 58px reach for the highlight box + hint. Mobile uses
+  // a wider 96px so the highlight + "near you" hint already shows up while
+  // the player is anywhere in the same region as a species.
+  const isMobile = isPixelWorldMobileLayout();
+  const hintReach = isMobile ? 96 : 58;
+  const nearest = getNearestInteractableSpecies(hintReach);
+
   if (nearest !== lastNearestObject) {
     lastNearestObject = nearest;
     if (nearest) {
-      setWorldDialogue(`靠近了：${nearest.name} ${nearest.englishName}，按 E 读取情绪信息。`, false);
+      const msg = isMobile
+        ? `靠近：${nearest.name} ${nearest.englishName}\n点查看可读取它的情绪日记。`
+        : `靠近了：${nearest.name} ${nearest.englishName}，按 E 读取情绪信息。`;
+      setWorldDialogue(msg, false);
     }
   }
   drawPixelWorld();
@@ -2122,6 +2190,7 @@ dpadButtons.forEach((button) => {
     event.preventDefault();
   }, { passive: false });
 
+  // Block long-press context menu on the dpad button.
   button.addEventListener("contextmenu", (event) => {
     event.preventDefault();
   });
@@ -2132,7 +2201,10 @@ dpadButtons.forEach((button) => {
     button.setPointerCapture?.(event.pointerId);
   });
 
-  ["pointerup", "pointercancel", "pointerleave"].forEach((eventName) => {
+  // Six release/cancel events cover every way a touch can end without
+  // sticking the avatar in motion. Each one clears only this button's key
+  // so multi-touch (rare but possible) still works.
+  ["pointerup", "pointercancel", "pointerleave", "touchend", "touchcancel"].forEach((eventName) => {
     button.addEventListener(eventName, () => {
       worldKeys.delete(key);
     });
